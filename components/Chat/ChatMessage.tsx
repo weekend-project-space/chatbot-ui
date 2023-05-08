@@ -20,8 +20,10 @@ import { CodeBlock } from '../Markdown/CodeBlock';
 import { MemoizedReactMarkdown } from '../Markdown/MemoizedReactMarkdown';
 
 import rehypeMathjax from 'rehype-mathjax';
+import rehypeRaw from 'rehype-raw'
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+
 
 export interface Props {
   message: Message;
@@ -212,7 +214,8 @@ export const ChatMessage: FC<Props> = memo(({ message, messageIndex, onEdit }) =
               <MemoizedReactMarkdown
                 className="prose dark:prose-invert flex-1"
                 remarkPlugins={[remarkGfm, remarkMath]}
-                rehypePlugins={[rehypeMathjax]}
+                rehypePlugins={[rehypeMathjax, rehypeRaw]}
+                skipHtml={true}
                 components={{
                   code({ node, inline, className, children, ...props }) {
                     if (children.length) {
@@ -222,7 +225,6 @@ export const ChatMessage: FC<Props> = memo(({ message, messageIndex, onEdit }) =
 
                       children[0] = (children[0] as string).replace("`▍`", "▍")
                     }
-
                     const match = /language-(\w+)/.exec(className || '');
 
                     return !inline ? (
