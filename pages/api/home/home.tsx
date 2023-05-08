@@ -360,8 +360,9 @@ const Home = ({
       }}
     >
       <Head>
-        <title>Chatbot UI</title>
-        <meta name="description" content="ChatGPT but better." />
+        <title>Chatgpt 在线-永久免费使用！</title>
+        <meta name="description" content="ChatGPT是一款基于OpenAI GPT技术的大型语言模型，可以用于文本生成、智能对话、文本分类、情感分析、机器翻译、文本摘要等功能，欢迎访问体验" />
+        <meta name="keywords" content="ChatGPT注册 人工智能ChatGPT ChatGPT在线体验 ChatGPT  聊天机器人ChatGPT ChatGPT免费  ChatGPT官网 ChatGPT登录 ChatGPT地址"/>
         <meta
           name="viewport"
           content="height=device-height ,width=device-width, initial-scale=1, user-scalable=no"
