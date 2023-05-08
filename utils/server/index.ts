@@ -1,7 +1,7 @@
 import { Message } from '@/types/chat';
 import { OpenAIModel } from '@/types/openai';
 
-import { AZURE_DEPLOYMENT_ID, OPENAI_API_HOST, OPENAI_API_TYPE, OPENAI_API_VERSION, OPENAI_ORGANIZATION } from '../app/const';
+import { AZURE_DEPLOYMENT_ID, OPENAI_API_HOST, OPENAI_API_TYPE, OPENAI_API_VERSION, OPENAI_ORGANIZATION, STREAM_TYPE } from '../app/const';
 
 import {
   ParsedEvent,
@@ -84,34 +84,86 @@ export const OpenAIStream = async (
     }
   }
 
-  const stream = new ReadableStream({
-    async start(controller) {
-      const onParse = (event: ParsedEvent | ReconnectInterval) => {
-        if (event.type === 'event') {
-          const data = event.data;
-
-          try {
-            const json = JSON.parse(data);
-            if (json.choices[0].finish_reason != null) {
+  function parseArray(str: string){
+    if(str.includes("}{")){
+      let r = str.split("}{")
+      return r.map(s=>{
+        if (s.indexOf('{')!=0){
+          s='{'+s;
+        }
+        if(s.lastIndexOf("}")!=s.length-1){
+          s+='}'
+        }
+        return JSON.parse(s)
+      })
+    }else if(str){
+      return [JSON.parse(str)]
+    }else{
+      return []
+    }
+  }
+  if(STREAM_TYPE==''){
+    return new ReadableStream({
+      async start(controller) {
+        const onParse = (event: ParsedEvent | ReconnectInterval) => {
+          console.log('event',event)
+          if (event.type === 'event') {
+            const data = event.data;
+  
+            try {
+              const json = JSON.parse(data);
+              if (json.choices[0].finish_reason != null) {
+                controller.close();
+                return;
+              }
+              const text = json.choices[0].delta.content;
+              const queue = encoder.encode(text);
+              controller.enqueue(queue);
+            } catch (e) {
+              controller.error(e);
+            }
+          }
+        };
+  
+        const parser = createParser(onParse);
+  
+        for await (const chunk of res.body as any) {
+          console.log(decoder.decode(chunk))
+          parser.feed(decoder.decode(chunk));
+        }
+      },
+    });
+  }else{
+    // return stream;
+    return  new ReadableStream({
+      start(controller) {
+        const body = res.body as any
+        const reader = body.getReader();
+        const pump = () => {
+          return reader.read().then((v: any) => {
+            const done = v.done as Boolean
+            const value = decoder.decode(v.value as any)
+            const array = parseArray(value)
+            if (done) {
               controller.close();
               return;
             }
-            const text = json.choices[0].delta.content;
-            const queue = encoder.encode(text);
-            controller.enqueue(queue);
-          } catch (e) {
-            controller.error(e);
-          }
+            array.forEach(json=>{
+              const text = json.choices[0].delta.content
+              if(text){
+                controller.enqueue(encoder.encode(text));
+              }
+            })
+        
+            return pump();
+          });
         }
-      };
-
-      const parser = createParser(onParse);
-
-      for await (const chunk of res.body as any) {
-        parser.feed(decoder.decode(chunk));
+        return pump();
+        
       }
-    },
-  });
+    })
+  }
 
-  return stream;
+
+  
 };
