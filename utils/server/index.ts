@@ -96,11 +96,12 @@ export const OpenAIStream = async (
         }
         return JSON.parse(s)
       })
-    }else{
+    }else if(str){
       return [JSON.parse(str)]
+    }else{
+      return []
     }
   }
-
   if(STREAM_TYPE==''){
     return new ReadableStream({
       async start(controller) {
